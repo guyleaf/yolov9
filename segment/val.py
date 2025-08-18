@@ -17,19 +17,39 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 import torch.nn.functional as F
 
-from models.common import DetectMultiBackend
-from models.yolo import SegmentationModel
-from utils.callbacks import Callbacks
-from utils.general import (LOGGER, NUM_THREADS, TQDM_BAR_FORMAT, Profile, check_dataset, check_img_size,
-                           check_requirements, check_yaml, coco80_to_coco91_class, colorstr, increment_path,
-                           non_max_suppression, print_args, scale_boxes, xywh2xyxy, xyxy2xywh)
-from utils.metrics import ConfusionMatrix, box_iou
-from utils.plots import output_to_target, plot_val_study
-from utils.segment.dataloaders import create_dataloader
-from utils.segment.general import mask_iou, process_mask, process_mask_upsample, scale_image
-from utils.segment.metrics import Metrics, ap_per_class_box_and_mask
-from utils.segment.plots import plot_images_and_masks
-from utils.torch_utils import de_parallel, select_device, smart_inference_mode
+from yolov9.models.common import DetectMultiBackend
+from yolov9.models.yolo import SegmentationModel
+from yolov9.utils.callbacks import Callbacks
+from yolov9.utils.general import (
+    LOGGER,
+    NUM_THREADS,
+    TQDM_BAR_FORMAT,
+    Profile,
+    check_dataset,
+    check_img_size,
+    check_requirements,
+    check_yaml,
+    coco80_to_coco91_class,
+    colorstr,
+    increment_path,
+    non_max_suppression,
+    print_args,
+    scale_boxes,
+    xywh2xyxy,
+    xyxy2xywh,
+)
+from yolov9.utils.metrics import ConfusionMatrix, box_iou
+from yolov9.utils.plots import output_to_target, plot_val_study
+from yolov9.utils.segment.dataloaders import create_dataloader
+from yolov9.utils.segment.general import (
+    mask_iou,
+    process_mask,
+    process_mask_upsample,
+    scale_image,
+)
+from yolov9.utils.segment.metrics import Metrics, ap_per_class_box_and_mask
+from yolov9.utils.segment.plots import plot_images_and_masks
+from yolov9.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
 
 def save_one_txt(predn, save_conf, shape, file):
@@ -177,7 +197,7 @@ def run(
     model.eval()
     cuda = device.type != 'cpu'
     #is_coco = isinstance(data.get('val'), str) and data['val'].endswith(f'coco{os.sep}val2017.txt')  # COCO dataset
-    is_coco = isinstance(data.get('val'), str) and data['val'].endswith(f'val2017.txt')  # COCO dataset
+    is_coco = isinstance(data.get('val'), str) and data['val'].endswith('val2017.txt')  # COCO dataset
     nc = 1 if single_cls else int(data['nc'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10, device=device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()

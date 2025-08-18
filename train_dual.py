@@ -23,27 +23,54 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 import val_dual as validate  # for end-of-epoch mAP
-from models.experimental import attempt_load
-from models.yolo import Model
-from utils.autoanchor import check_anchors
-from utils.autobatch import check_train_batch_size
-from utils.callbacks import Callbacks
-from utils.dataloaders import create_dataloader
-from utils.downloads import attempt_download, is_url
-from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset, check_file, check_git_info,
-                           check_git_status, check_img_size, check_requirements, check_suffix, check_yaml, colorstr,
-                           get_latest_run, increment_path, init_seeds, intersect_dicts, labels_to_class_weights,
-                           labels_to_image_weights, methods, one_cycle, print_args, print_mutation, strip_optimizer,
-                           yaml_save, one_flat_cycle)
-from utils.loggers import Loggers
-from utils.loggers.comet.comet_utils import check_comet_resume
-from utils.loss_tal_dual import ComputeLoss
-#from utils.loss_tal_dual import ComputeLossLH as ComputeLoss
-#from utils.loss_tal_dual import ComputeLossLHCF as ComputeLoss
-from utils.metrics import fitness
-from utils.plots import plot_evolve
-from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
-                               smart_resume, torch_distributed_zero_first)
+from yolov9.models.experimental import attempt_load
+from yolov9.models.yolo import Model
+from yolov9.utils.autobatch import check_train_batch_size
+from yolov9.utils.callbacks import Callbacks
+from yolov9.utils.dataloaders import create_dataloader
+from yolov9.utils.downloads import attempt_download, is_url
+from yolov9.utils.general import (
+    LOGGER,
+    TQDM_BAR_FORMAT,
+    check_amp,
+    check_dataset,
+    check_file,
+    check_img_size,
+    check_suffix,
+    check_yaml,
+    colorstr,
+    get_latest_run,
+    increment_path,
+    init_seeds,
+    intersect_dicts,
+    labels_to_class_weights,
+    labels_to_image_weights,
+    methods,
+    one_cycle,
+    one_flat_cycle,
+    print_args,
+    print_mutation,
+    strip_optimizer,
+    yaml_save,
+)
+from yolov9.utils.loggers import Loggers
+from yolov9.utils.loggers.comet.comet_utils import check_comet_resume
+from yolov9.utils.loss_tal_dual import ComputeLoss
+
+#from yolov9.utils.loss_tal_dual import ComputeLossLH as ComputeLoss
+#from yolov9.utils.loss_tal_dual import ComputeLossLHCF as ComputeLoss
+from yolov9.utils.metrics import fitness
+from yolov9.utils.plots import plot_evolve
+from yolov9.utils.torch_utils import (
+    EarlyStopping,
+    ModelEMA,
+    de_parallel,
+    select_device,
+    smart_DDP,
+    smart_optimizer,
+    smart_resume,
+    torch_distributed_zero_first,
+)
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
@@ -162,7 +189,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     #     return 2 * abs(x / 32 + .5 - math.floor(x / 32 + 1)) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
 
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
-    # from utils.plots import plot_lr_scheduler; plot_lr_scheduler(optimizer, scheduler, epochs)
+    # from yolov9.utils.plots import plot_lr_scheduler; plot_lr_scheduler(optimizer, scheduler, epochs)
 
     # EMA
     ema = ModelEMA(model) if RANK in {-1, 0} else None
