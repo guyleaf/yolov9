@@ -12,10 +12,10 @@ if str(ROOT) not in sys.path:
 if platform.system() != 'Windows':
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-from ..utils.general import LOGGER, check_yaml, make_divisible, print_args
-from ..utils.plots import feature_visualization
-from ..utils.tal.anchor_generator import dist2bbox, make_anchors
-from ..utils.torch_utils import (
+from yolov9.utils.general import LOGGER, check_yaml, make_divisible, print_args
+from yolov9.utils.plots import feature_visualization
+from yolov9.utils.tal.anchor_generator import dist2bbox, make_anchors
+from yolov9.utils.torch_utils import (
     fuse_conv_and_bn,
     initialize_weights,
     model_info,
@@ -24,6 +24,7 @@ from ..utils.torch_utils import (
     select_device,
     time_sync,
 )
+
 from .common import *
 from .experimental import *
 

@@ -6,11 +6,11 @@ import pkg_resources as pkg
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from .general import LOGGER, colorstr, cv2
-from .loggers.clearml.clearml_utils import ClearmlLogger
-from .loggers.wandb.wandb_utils import WandbLogger
-from .plots import plot_images, plot_labels, plot_results
-from .torch_utils import de_parallel
+from ..general import LOGGER, colorstr, cv2
+from ..loggers.clearml.clearml_utils import ClearmlLogger
+from ..loggers.wandb.wandb_utils import WandbLogger
+from ..plots import plot_images, plot_labels, plot_results
+from ..torch_utils import de_parallel
 
 LOGGERS = ('csv', 'tb', 'wandb', 'clearml', 'comet')  # *.csv, TensorBoard, Weights & Biases, ClearML
 RANK = int(os.getenv('RANK', -1))
@@ -43,7 +43,7 @@ try:
         import comet_ml
 
         assert hasattr(comet_ml, '__version__')  # verify package import not local dir
-        from .loggers.comet import CometLogger
+        from .comet import CometLogger
 
 except (ModuleNotFoundError, ImportError, AssertionError):
     comet_ml = None

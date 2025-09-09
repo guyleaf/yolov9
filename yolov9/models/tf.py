@@ -15,8 +15,9 @@ import torch
 import torch.nn as nn
 from tensorflow import keras
 
-from ..utils.activations import SiLU
-from ..utils.general import LOGGER, make_divisible, print_args
+from yolov9.utils.activations import SiLU
+from yolov9.utils.general import LOGGER, make_divisible, print_args
+
 from .common import (
     C3,
     SPP,

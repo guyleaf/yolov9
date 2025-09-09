@@ -10,9 +10,9 @@ if str(ROOT) not in sys.path:
 
 from train import parse_opt, train
 
-from .callbacks import Callbacks
-from .general import increment_path
-from .torch_utils import select_device
+from ...callbacks import Callbacks
+from ...general import increment_path
+from ...torch_utils import select_device
 
 
 def sweep():

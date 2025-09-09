@@ -1,6 +1,5 @@
 import cv2
-
-from pycocotools.coco import COCO
+import numpy as np
 from pycocotools import mask as maskUtils
 
 # coco id: https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/

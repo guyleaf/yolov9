@@ -27,9 +27,9 @@ import torch
 import torchvision.transforms as T
 import yaml
 
-from .dataloaders import img2label_paths
-from .general import check_dataset, scale_boxes, xywh2xyxy
-from .metrics import box_iou
+from ...dataloaders import img2label_paths
+from ...general import check_dataset, scale_boxes, xywh2xyxy
+from ...metrics import box_iou
 
 COMET_PREFIX = "comet://"
 

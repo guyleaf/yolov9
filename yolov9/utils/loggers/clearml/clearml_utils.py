@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .plots import Annotator, colors
+from ...plots import Annotator, colors
 
 try:
     import clearml

@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .general import xywh2xyxy, xyxy2xywh
-from .metrics import bbox_iou
-from .segment.general import crop_mask
-from .segment.tal.anchor_generator import bbox2dist, dist2bbox, make_anchors
-from .segment.tal.assigner import TaskAlignedAssigner
-from .torch_utils import de_parallel
+from ..general import xywh2xyxy, xyxy2xywh
+from ..metrics import bbox_iou
+from ..torch_utils import de_parallel
+from .general import crop_mask
+from .tal.anchor_generator import bbox2dist, dist2bbox, make_anchors
+from .tal.assigner import TaskAlignedAssigner
 
 
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441

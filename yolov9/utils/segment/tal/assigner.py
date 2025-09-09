@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .metrics import bbox_iou
+from ...metrics import bbox_iou
 
 
 def select_candidates_in_gts(xy_centers, gt_bboxes, eps=1e-9):
