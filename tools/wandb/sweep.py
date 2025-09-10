@@ -3,9 +3,9 @@ from pathlib import Path
 
 import wandb
 
-from ...callbacks import Callbacks
-from ...general import ROOT, increment_path
-from ...torch_utils import select_device
+from yolov9.utils.callbacks import Callbacks
+from yolov9.utils.general import ROOT, increment_path
+from yolov9.utils.torch_utils import select_device
 
 if str(ROOT.parent) not in sys.path:
     sys.path.append(str(ROOT.parent))  # add parent folder of ROOT to PATH
