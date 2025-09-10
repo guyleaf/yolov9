@@ -35,9 +35,12 @@ from yolov9.models.yolo import ClassificationModel, DetectionModel
 from yolov9.utils.dataloaders import create_classification_dataloader
 from yolov9.utils.general import (
     DATASETS_DIR,
+    LOCAL_RANK,
     LOGGER,
+    RANK,
     TQDM_BAR_FORMAT,
     WORKDIR_ROOT,
+    WORLD_SIZE,
     WorkingDirectory,
     check_git_info,
     check_git_status,
@@ -69,9 +72,6 @@ if str(ROOT) not in sys.path:
 
 import classify.val as validate  # noqa: E402
 
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
-WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 GIT_INFO = check_git_info()
 
 

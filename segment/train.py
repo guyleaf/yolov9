@@ -22,9 +22,12 @@ from yolov9.utils.autobatch import check_train_batch_size
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.downloads import attempt_download, is_url
 from yolov9.utils.general import (
+    LOCAL_RANK,
     LOGGER,
+    RANK,
     TQDM_BAR_FORMAT,
     WORKDIR_ROOT,
+    WORLD_SIZE,
     check_amp,
     check_dataset,
     check_file,
@@ -68,9 +71,6 @@ if str(ROOT) not in sys.path:
 
 import segment.val as validate  # for end-of-epoch mAP  # noqa: E402
 
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
-WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 GIT_INFO = None#check_git_info()
 
 

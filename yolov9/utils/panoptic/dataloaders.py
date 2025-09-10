@@ -1,11 +1,8 @@
 import os
 import random
-
-import pickle
-from pathlib import Path
-
 from itertools import repeat
-from multiprocessing.pool import Pool, ThreadPool
+from multiprocessing.pool import Pool
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -14,13 +11,27 @@ from torch.utils.data import DataLoader, distributed
 from tqdm import tqdm
 
 from ..augmentations import augment_hsv
-from ..dataloaders import InfiniteDataLoader, LoadImagesAndLabels, seed_worker, get_hash, verify_image_label, HELP_URL, TQDM_BAR_FORMAT, LOCAL_RANK
-from ..general import NUM_THREADS, LOGGER, xyn2xy, xywhn2xyxy, xyxy2xywhn
+from ..coco_utils import getCocoIds
+from ..dataloaders import (
+    HELP_URL,
+    TQDM_BAR_FORMAT,
+    InfiniteDataLoader,
+    LoadImagesAndLabels,
+    get_hash,
+    seed_worker,
+    verify_image_label,
+)
+from ..general import (
+    LOCAL_RANK,
+    LOGGER,
+    NUM_THREADS,
+    RANK,
+    xyn2xy,
+    xywhn2xyxy,
+    xyxy2xywhn,
+)
 from ..torch_utils import torch_distributed_zero_first
-from ..coco_utils import annToMask, getCocoIds
-from .augmentations import mixup, random_perspective, copy_paste, letterbox
-
-RANK = int(os.getenv('RANK', -1))
+from .augmentations import copy_paste, letterbox, mixup, random_perspective
 
 
 def create_dataloader(path,

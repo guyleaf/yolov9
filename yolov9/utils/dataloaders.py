@@ -35,8 +35,10 @@ from .augmentations import (
 )
 from .general import (
     DATASETS_DIR,
+    LOCAL_RANK,
     LOGGER,
     NUM_THREADS,
+    RANK,
     TQDM_BAR_FORMAT,
     check_dataset,
     check_requirements,
@@ -58,8 +60,6 @@ from .torch_utils import torch_distributed_zero_first
 HELP_URL = 'See https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 IMG_FORMATS = 'bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp', 'pfm'  # include image suffixes
 VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'  # include video suffixes
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
 PIN_MEMORY = str(os.getenv('PIN_MEMORY', True)).lower() == 'true'  # global pin_memory for dataloaders
 
 # Get orientation exif tag

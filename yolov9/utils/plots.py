@@ -1,6 +1,5 @@
 import contextlib
 import math
-import os
 from copy import copy
 from pathlib import Path
 from urllib.error import URLError
@@ -31,7 +30,6 @@ from .metrics import fitness
 from .segment.general import scale_image
 
 # Settings
-RANK = int(os.getenv('RANK', -1))
 matplotlib.rc('font', **{'size': 11})
 matplotlib.use('Agg')  # for writing to files only
 

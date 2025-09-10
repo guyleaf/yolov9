@@ -6,14 +6,13 @@ import pkg_resources as pkg
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from ..general import LOGGER, colorstr, cv2
+from ..general import LOGGER, RANK, colorstr, cv2
 from ..loggers.clearml.clearml_utils import ClearmlLogger
 from ..loggers.wandb.wandb_utils import WandbLogger
 from ..plots import plot_images, plot_labels, plot_results
 from ..torch_utils import de_parallel
 
 LOGGERS = ('csv', 'tb', 'wandb', 'clearml', 'comet')  # *.csv, TensorBoard, Weights & Biases, ClearML
-RANK = int(os.getenv('RANK', -1))
 
 try:
     import wandb

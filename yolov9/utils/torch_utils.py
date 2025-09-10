@@ -14,12 +14,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from .general import LOGGER, check_version, colorstr, file_date, git_describe
+from .general import (
+    LOCAL_RANK,
+    LOGGER,
+    check_version,
+    colorstr,
+    file_date,
+    git_describe,
+)
 from .lion import Lion
-
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
-WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 
 try:
     import thop  # for FLOPs computation

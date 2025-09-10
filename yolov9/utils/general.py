@@ -40,6 +40,8 @@ GIT_ROOT = ROOT.parent if (ROOT.parent / ".git").is_dir() else None
 WORKDIR_ROOT = GIT_ROOT or Path().resolve()  # YOLO work directory
 
 RANK = int(os.getenv('RANK', -1))
+LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
+WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 
 
 def is_ascii(s=''):
@@ -114,7 +116,7 @@ LOGGING_NAME = "yolov5"
 
 def set_logging(name=LOGGING_NAME, verbose=True):
     # sets up logging for the given name
-    rank = int(os.getenv('RANK', -1))  # rank in world for Multi-GPU trainings
+    rank = RANK  # rank in world for Multi-GPU trainings
     level = logging.INFO if verbose and rank in {-1, 0} else logging.ERROR
     logging.config.dictConfig({
         "version": 1,
