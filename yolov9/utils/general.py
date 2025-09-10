@@ -377,7 +377,11 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
 
 
 @TryExcept()
-def check_requirements(requirements=ROOT / 'requirements.txt', exclude=(), install=True, cmds=''):
+def check_requirements(requirements=None, exclude=(), install=True, cmds=''):
+    if requirements is None:
+        assert GIT_ROOT is not None, "Not in a git repo."
+        requirements = GIT_ROOT / 'requirements.txt'
+
     # Check installed dependencies meet YOLO requirements (pass *.txt file or list of packages or single package str)
     prefix = colorstr('red', 'bold', 'requirements:')
     check_python()  # check python version
