@@ -6,27 +6,27 @@ from pathlib import Path
 
 import pandas as pd
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-# ROOT = ROOT.relative_to(Path.cwd())  # relative
-
-import export
-from segment.val import run as val_seg
-from val import run as val_det
 from yolov9.models.experimental import attempt_load
 from yolov9.models.yolo import SegmentationModel
 from yolov9.utils import notebook_init
-from yolov9.utils.general import LOGGER, check_yaml, file_size, print_args
+from yolov9.utils.general import LOGGER, WORKDIR_ROOT, check_yaml, file_size, print_args
 from yolov9.utils.torch_utils import select_device
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0]
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
+import export  # noqa: E402
+from segment.val import run as val_seg  # noqa: E402
+from val import run as val_det  # noqa: E402
 
 
 def run(
-        weights=ROOT / 'yolo.pt',  # weights path
+        weights=WORKDIR_ROOT / 'yolo.pt',  # weights path
         imgsz=640,  # inference size (pixels)
         batch_size=1,  # batch size
-        data=ROOT / 'data/coco.yaml',  # dataset.yaml path
+        data=WORKDIR_ROOT / 'data/coco.yaml',  # dataset.yaml path
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         half=False,  # use FP16 half-precision inference
         test=False,  # test exports only
@@ -85,10 +85,10 @@ def run(
 
 
 def test(
-        weights=ROOT / 'yolo.pt',  # weights path
+        weights=WORKDIR_ROOT / 'yolo.pt',  # weights path
         imgsz=640,  # inference size (pixels)
         batch_size=1,  # batch size
-        data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
+        data=WORKDIR_ROOT / 'data/coco128.yaml',  # dataset.yaml path
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         half=False,  # use FP16 half-precision inference
         test=False,  # test exports only
@@ -118,10 +118,10 @@ def test(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'yolo.pt', help='weights path')
+    parser.add_argument('--weights', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='weights path')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128.yaml', help='dataset.yaml path')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--test', action='store_true', help='test exports only')

@@ -1,21 +1,13 @@
 import argparse
 import json
 import os
-import sys
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import numpy as np
 import torch
-from tqdm import tqdm
-
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
 import torch.nn.functional as F
+from tqdm import tqdm
 
 from yolov9.models.common import DetectMultiBackend
 from yolov9.models.yolo import SegmentationModel
@@ -24,6 +16,7 @@ from yolov9.utils.general import (
     LOGGER,
     NUM_THREADS,
     TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
     Profile,
     check_dataset,
     check_img_size,
@@ -142,7 +135,7 @@ def run(
         save_hybrid=False,  # save label+prediction hybrid results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
         save_json=False,  # save a COCO-JSON results file
-        project=ROOT / 'runs/val-seg',  # save to project/name
+        project=WORKDIR_ROOT / 'runs/val-seg',  # save to project/name
         name='exp',  # save to project/name
         exist_ok=False,  # existing project/name ok, do not increment
         half=True,  # use FP16 half-precision inference
@@ -409,8 +402,8 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128-seg.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolo-seg.pt', help='model path(s)')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128-seg.yaml', help='dataset.yaml path')
+    parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo-seg.pt', help='model path(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
@@ -426,7 +419,7 @@ def parse_opt():
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-json', action='store_true', help='save a COCO-JSON results file')
-    parser.add_argument('--project', default=ROOT / 'runs/val-seg', help='save results to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/val-seg', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
@@ -440,7 +433,7 @@ def parse_opt():
 
 
 def main(opt):
-    #check_requirements(requirements=ROOT / 'requirements.txt', exclude=('tensorboard', 'thop'))
+    #check_requirements(requirements=GIT_ROOT / 'requirements.txt', exclude=('tensorboard', 'thop'))
 
     if opt.task in ('train', 'val', 'test'):  # run normally
         if opt.conf_thres > 0.001:  # https://github.com/ultralytics/yolov5/issues/1466

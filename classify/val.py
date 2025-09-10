@@ -21,24 +21,18 @@ Usage - formats:
 """
 
 import argparse
-import os
-import sys
 from pathlib import Path
 
 import torch
 from tqdm import tqdm
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
 from yolov9.models.common import DetectMultiBackend
 from yolov9.utils.dataloaders import create_classification_dataloader
 from yolov9.utils.general import (
+    DATASETS_DIR,
     LOGGER,
     TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
     Profile,
     check_img_size,
     check_requirements,
@@ -51,14 +45,14 @@ from yolov9.utils.torch_utils import select_device, smart_inference_mode
 
 @smart_inference_mode()
 def run(
-    data=ROOT / '../datasets/mnist',  # dataset dir
-    weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
+    data=DATASETS_DIR / 'mnist',  # dataset dir
+    weights=WORKDIR_ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
     batch_size=128,  # batch size
     imgsz=224,  # inference size (pixels)
     device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
     workers=8,  # max dataloader workers (per RANK in DDP mode)
     verbose=False,  # verbose output
-    project=ROOT / 'runs/val-cls',  # save to project/name
+    project=WORKDIR_ROOT / 'runs/val-cls',  # save to project/name
     name='exp',  # save to project/name
     exist_ok=False,  # existing project/name ok, do not increment
     half=False,  # use FP16 half-precision inference
@@ -151,14 +145,14 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / '../datasets/mnist', help='dataset path')
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s-cls.pt', help='model.pt path(s)')
+    parser.add_argument('--data', type=str, default=DATASETS_DIR / 'mnist', help='dataset path')
+    parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolov5s-cls.pt', help='model.pt path(s)')
     parser.add_argument('--batch-size', type=int, default=128, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=224, help='inference size (pixels)')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--verbose', nargs='?', const=True, default=True, help='verbose output')
-    parser.add_argument('--project', default=ROOT / 'runs/val-cls', help='save to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/val-cls', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')

@@ -1,20 +1,11 @@
 import argparse
 import contextlib
-import os
 import platform
-import sys
 import time
 import warnings
 from pathlib import Path
 
 import torch
-
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-if platform.system() != 'Windows':
-    ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 import yolov9.exports as exports
 from yolov9.models.experimental import attempt_load
@@ -29,6 +20,7 @@ from yolov9.models.yolo import (
 )
 from yolov9.utils.general import (
     LOGGER,
+    WORKDIR_ROOT,
     check_img_size,
     colorstr,
     file_size,
@@ -75,8 +67,8 @@ def add_tflite_metadata(file, metadata, num_outputs):
 
 @smart_inference_mode()
 def run(
-        data=ROOT / 'data/coco.yaml',  # 'dataset.yaml path'
-        weights=ROOT / 'yolo.pt',  # weights path
+        data=WORKDIR_ROOT / 'data/coco.yaml',  # 'dataset.yaml path'
+        weights=WORKDIR_ROOT / 'yolo.pt',  # weights path
         imgsz=(640, 640),  # image (height, width)
         batch_size=1,  # batch size
         device='cpu',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -208,8 +200,8 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolo.pt', help='model.pt path(s)')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco.yaml', help='dataset.yaml path')
+    parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='model.pt path(s)')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='image (h, w)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')

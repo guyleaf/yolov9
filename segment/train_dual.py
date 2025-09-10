@@ -16,13 +16,6 @@ import yaml
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
-import segment.val_dual as validate  # for end-of-epoch mAP
 from yolov9.models.experimental import attempt_load
 from yolov9.models.yolo import SegmentationModel
 from yolov9.utils.autobatch import check_train_batch_size
@@ -31,6 +24,7 @@ from yolov9.utils.downloads import attempt_download, is_url
 from yolov9.utils.general import (
     LOGGER,
     TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
     check_amp,
     check_dataset,
     check_file,
@@ -68,6 +62,13 @@ from yolov9.utils.torch_utils import (
     smart_resume,
     torch_distributed_zero_first,
 )
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
+import segment.val_dual as validate  # for end-of-epoch mAP  # noqa: E402
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
@@ -475,10 +476,10 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'yolo-seg.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default=WORKDIR_ROOT / 'yolo-seg.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128-seg.yaml', help='dataset.yaml path')
-    parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128-seg.yaml', help='dataset.yaml path')
+    parser.add_argument('--hyp', type=str, default=WORKDIR_ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=100, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
@@ -498,7 +499,7 @@ def parse_opt(known=False):
     parser.add_argument('--optimizer', type=str, choices=['SGD', 'Adam', 'AdamW', 'LION'], default='SGD', help='optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--project', default=ROOT / 'runs/train-seg', help='save to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/train-seg', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
@@ -544,8 +545,8 @@ def main(opt, callbacks=Callbacks()):
             check_file(opt.data), check_yaml(opt.cfg), check_yaml(opt.hyp), str(opt.weights), str(opt.project)  # checks
         assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
         if opt.evolve:
-            if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
-                opt.project = str(ROOT / 'runs/evolve')
+            if opt.project == str(WORKDIR_ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
+                opt.project = str(WORKDIR_ROOT / 'runs/evolve')
             opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
         if opt.name == 'cfg':
             opt.name = Path(opt.cfg).stem  # use model.yaml as name

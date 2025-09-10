@@ -16,13 +16,6 @@ import yaml
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
-import val_dual as validate  # for end-of-epoch mAP
 from yolov9.models.experimental import attempt_load
 from yolov9.models.yolo import Model
 from yolov9.utils.autobatch import check_train_batch_size
@@ -71,6 +64,13 @@ from yolov9.utils.torch_utils import (
     smart_resume,
     torch_distributed_zero_first,
 )
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0]
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
+import val_dual as validate  # for end-of-epoch mAP  # noqa: E402
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))

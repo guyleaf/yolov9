@@ -10,7 +10,7 @@ import torchvision.transforms as T
 import yaml
 
 from ...dataloaders import img2label_paths
-from ...general import ROOT, check_dataset, scale_boxes, xywh2xyxy
+from ...general import DATASETS_DIR, check_dataset, scale_boxes, xywh2xyxy
 from ...metrics import box_iou
 
 try:
@@ -316,7 +316,7 @@ class CometLogger:
         dataset_name = self.data_dict.get("dataset_name", "yolov5-dataset")
         path = Path(self.data_dict["path"])
         if not path.is_absolute():
-            path = (ROOT / path).resolve()
+            path = (DATASETS_DIR / path).resolve()
         path = str(path)
 
         metadata = self.data_dict.copy()
