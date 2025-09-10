@@ -43,7 +43,7 @@ seaborn>=0.11.0
 
 # Extras ----------------------------------------------------------------------
 # mss
-albumentations>=1.0.3
+albumentations>=1.0.3, <2
 pycocotools>=2.0
 # for future deprecation, limit setuptools to keep pkg_resources package
 setuptools<81
