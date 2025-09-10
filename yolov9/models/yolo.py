@@ -1,18 +1,12 @@
+# ruff: noqa: F405
 import argparse
-import os
-import platform
-import sys
 from copy import deepcopy
 from pathlib import Path
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-if platform.system() != 'Windows':
-    ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+import torch
+import torch.nn as nn
 
-from yolov9.utils.general import LOGGER, check_yaml, make_divisible, print_args
+from yolov9.utils.general import LOGGER, ROOT, check_yaml, make_divisible, print_args
 from yolov9.utils.plots import feature_visualization
 from yolov9.utils.tal.anchor_generator import dist2bbox, make_anchors
 from yolov9.utils.torch_utils import (
@@ -25,8 +19,8 @@ from yolov9.utils.torch_utils import (
     time_sync,
 )
 
-from .common import *
-from .experimental import *
+from .common import *  # noqa: F403
+from .experimental import *  # noqa: F403
 
 try:
     import thop  # for FLOPs computation

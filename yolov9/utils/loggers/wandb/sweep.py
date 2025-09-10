@@ -3,16 +3,14 @@ from pathlib import Path
 
 import wandb
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[3]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
+from ...callbacks import Callbacks
+from ...general import ROOT, increment_path
+from ...torch_utils import select_device
+
+if str(ROOT.parent) not in sys.path:
+    sys.path.append(str(ROOT.parent))  # add parent folder of ROOT to PATH
 
 from train import parse_opt, train
-
-from ...callbacks import Callbacks
-from ...general import increment_path
-from ...torch_utils import select_device
 
 
 def sweep():

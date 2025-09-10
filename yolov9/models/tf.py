@@ -1,13 +1,6 @@
 import argparse
-import sys
 from copy import deepcopy
 from pathlib import Path
-
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-# ROOT = ROOT.relative_to(Path.cwd())  # relative
 
 import numpy as np
 import tensorflow as tf
@@ -16,7 +9,7 @@ import torch.nn as nn
 from tensorflow import keras
 
 from yolov9.utils.activations import SiLU
-from yolov9.utils.general import LOGGER, make_divisible, print_args
+from yolov9.utils.general import LOGGER, WORKDIR_ROOT, make_divisible, print_args
 
 from .common import (
     C3,
@@ -565,7 +558,7 @@ def representative_dataset_gen(dataset, ncalib=100):
 
 
 def run(
-        weights=ROOT / 'yolo.pt',  # weights path
+        weights=WORKDIR_ROOT / 'yolo.pt',  # weights path
         imgsz=(640, 640),  # inference size h,w
         batch_size=1,  # batch size
         dynamic=False,  # dynamic batch size
@@ -591,7 +584,7 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'yolo.pt', help='weights path')
+    parser.add_argument('--weights', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='weights path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--dynamic', action='store_true', help='dynamic batch size')

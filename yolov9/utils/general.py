@@ -36,22 +36,10 @@ from .metrics import box_iou, fitness
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[1]  # YOLO root directory
+GIT_ROOT = ROOT.parent if (ROOT.parent / ".git").is_dir() else None
+WORKDIR_ROOT = GIT_ROOT or Path().resolve()  # YOLO work directory
+
 RANK = int(os.getenv('RANK', -1))
-
-# Settings
-NUM_THREADS = min(8, max(1, os.cpu_count() - 1))  # number of YOLOv5 multiprocessing threads
-DATASETS_DIR = Path(os.getenv('YOLOv5_DATASETS_DIR', ROOT.parent / 'datasets'))  # global datasets directory
-AUTOINSTALL = str(os.getenv('YOLOv5_AUTOINSTALL', True)).lower() == 'true'  # global auto-install mode
-VERBOSE = str(os.getenv('YOLOv5_VERBOSE', True)).lower() == 'true'  # global verbose mode
-TQDM_BAR_FORMAT = '{l_bar}{bar:10}| {n_fmt}/{total_fmt} {elapsed}'  # tqdm bar format
-FONT = 'Arial.ttf'  # https://ultralytics.com/assets/Arial.ttf
-
-torch.set_printoptions(linewidth=320, precision=5, profile='long')
-np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
-pd.options.display.max_columns = 10
-cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with PyTorch DataLoader)
-os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
-os.environ['OMP_NUM_THREADS'] = '1' if platform.system() == 'darwin' else str(NUM_THREADS)  # OpenMP (PyTorch and SciPy)
 
 
 def is_ascii(s=''):
@@ -105,6 +93,21 @@ def is_writeable(dir, test=False):
     except OSError:
         return False
 
+
+# Settings
+NUM_THREADS = min(8, max(1, os.cpu_count() - 1))  # number of YOLOv5 multiprocessing threads
+DATASETS_DIR = Path(os.getenv('YOLOv5_DATASETS_DIR', WORKDIR_ROOT.parent if GIT_ROOT and is_writeable(WORKDIR_ROOT.parent) else WORKDIR_ROOT / 'datasets'))  # global datasets directory
+AUTOINSTALL = str(os.getenv('YOLOv5_AUTOINSTALL', True)).lower() == 'true'  # global auto-install mode
+VERBOSE = str(os.getenv('YOLOv5_VERBOSE', True)).lower() == 'true'  # global verbose mode
+TQDM_BAR_FORMAT = '{l_bar}{bar:10}| {n_fmt}/{total_fmt} {elapsed}'  # tqdm bar format
+FONT = 'Arial.ttf'  # https://ultralytics.com/assets/Arial.ttf
+
+torch.set_printoptions(linewidth=320, precision=5, profile='long')
+np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
+pd.options.display.max_columns = 10
+cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with PyTorch DataLoader)
+os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
+os.environ['OMP_NUM_THREADS'] = '1' if platform.system() == 'darwin' else str(NUM_THREADS)  # OpenMP (PyTorch and SciPy)
 
 LOGGING_NAME = "yolov5"
 
@@ -299,8 +302,9 @@ def check_online():
 
     return run_once() or run_once()  # check twice to increase robustness to intermittent connectivity issues
 
-
-def git_describe(path=ROOT):  # path must be a directory
+@TryExcept()
+@WorkingDirectory(GIT_ROOT)
+def git_describe(path="."):  # path must be a directory
     # Return human-readable git description, i.e. v5.0-5-g3e25f1e https://git-scm.com/docs/git-describe
     try:
         assert (Path(path) / '.git').is_dir()
@@ -310,7 +314,7 @@ def git_describe(path=ROOT):  # path must be a directory
 
 
 @TryExcept()
-@WorkingDirectory(ROOT)
+@WorkingDirectory(GIT_ROOT)
 def check_git_status(repo='WongKinYiu/yolov9', branch='main'):
     # YOLO status check, recommend 'git pull' if code is out of date
     url = f'https://github.com/{repo}'
@@ -336,8 +340,8 @@ def check_git_status(repo='WongKinYiu/yolov9', branch='main'):
         s += f'up to date with {url} ✅'
     LOGGER.info(s)
 
-
-@WorkingDirectory(ROOT)
+@TryExcept()
+@WorkingDirectory(GIT_ROOT)
 def check_git_info(path='.'):
     # YOLO git info check, return {remote, branch, commit}
     check_requirements('gitpython')

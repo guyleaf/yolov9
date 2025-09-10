@@ -7,23 +7,20 @@ from pathlib import Path
 
 import comet_ml
 
-logger = logging.getLogger(__name__)
+from ...callbacks import Callbacks
+from ...general import ROOT, increment_path
+from ...torch_utils import select_device
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[3]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
+if str(ROOT.parent) not in sys.path:
+    sys.path.append(str(ROOT.parent))  # add parent folder of ROOT to PATH
 
 from train import train
-
-from ...callbacks import Callbacks
-from ...general import increment_path
-from ...torch_utils import select_device
 
 # Project Configuration
 config = comet_ml.config.get_config()
 COMET_PROJECT_NAME = config.get_string(os.getenv("COMET_PROJECT_NAME"), "comet.project_name", default="yolov5")
 
+logger = logging.getLogger(__name__)
 
 def get_args(known=False):
     parser = argparse.ArgumentParser()

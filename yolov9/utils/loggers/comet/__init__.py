@@ -2,15 +2,16 @@ import glob
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+import PIL
+import torch
+import torchvision.transforms as T
+import yaml
 
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[3]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
+from ...dataloaders import img2label_paths
+from ...general import ROOT, check_dataset, scale_boxes, xywh2xyxy
+from ...metrics import box_iou
 
 try:
     import comet_ml
@@ -21,15 +22,6 @@ try:
 except (ModuleNotFoundError, ImportError):
     comet_ml = None
     COMET_PROJECT_NAME = None
-
-import PIL
-import torch
-import torchvision.transforms as T
-import yaml
-
-from ...dataloaders import img2label_paths
-from ...general import check_dataset, scale_boxes, xywh2xyxy
-from ...metrics import box_iou
 
 COMET_PREFIX = "comet://"
 
@@ -56,8 +48,7 @@ COMET_BATCH_LOGGING_INTERVAL = os.getenv("COMET_BATCH_LOGGING_INTERVAL", 1)
 COMET_PREDICTION_LOGGING_INTERVAL = os.getenv("COMET_PREDICTION_LOGGING_INTERVAL", 1)
 COMET_LOG_PER_CLASS_METRICS = os.getenv("COMET_LOG_PER_CLASS_METRICS", "false").lower() == "true"
 
-RANK = int(os.getenv("RANK", -1))
-
+logger = logging.getLogger(__name__)
 to_pil = T.ToPILImage()
 
 
