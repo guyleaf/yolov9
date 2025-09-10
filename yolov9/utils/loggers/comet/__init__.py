@@ -314,7 +314,10 @@ class CometLogger:
 
     def upload_dataset_artifact(self):
         dataset_name = self.data_dict.get("dataset_name", "yolov5-dataset")
-        path = str((ROOT / Path(self.data_dict["path"])).resolve())
+        path = Path(self.data_dict["path"])
+        if not path.is_absolute():
+            path = (ROOT / path).resolve()
+        path = str(path)
 
         metadata = self.data_dict.copy()
         for key in ["train", "val", "test"]:
