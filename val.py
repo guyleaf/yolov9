@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +8,7 @@ import torch
 from tqdm import tqdm
 
 from yolov9.models.common import DetectMultiBackend
+from yolov9.utils import ModelType
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.dataloaders import create_dataloader
 from yolov9.utils.general import (
@@ -32,15 +32,6 @@ from yolov9.utils.general import (
 from yolov9.utils.metrics import ConfusionMatrix, ap_per_class, box_iou
 from yolov9.utils.plots import output_to_target, plot_images, plot_val_study
 from yolov9.utils.torch_utils import select_device, smart_inference_mode
-
-
-class ModelType(Enum):
-    SINGLE = "single"
-    DUAL = "dual"
-    TRIPLE = "triple"
-
-    def __str__(self):
-        return self.value
 
 
 def save_one_txt(predn, save_conf, shape, file):
