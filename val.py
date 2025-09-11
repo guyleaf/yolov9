@@ -342,7 +342,7 @@ def run(
 
 
 def parse_opt():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco.yaml', help='dataset.yaml path')
     parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='model path(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
