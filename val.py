@@ -210,8 +210,8 @@ def run(
                 preds = preds[0][1]
         elif model_type == ModelType.TRIPLE:
             preds = preds[2]
-            train_out = train_out[2]
             # if compute_loss:
+            #     train_out = train_out[2]
             #     loss += compute_loss(train_out, targets)[1]  # box, obj, cls
         else:
             if compute_loss:
