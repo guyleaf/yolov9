@@ -8,6 +8,7 @@ import torch
 from tqdm import tqdm
 
 from yolov9.models.common import DetectMultiBackend
+from yolov9.utils import ModelType
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.dataloaders import create_dataloader
 from yolov9.utils.general import (
@@ -112,6 +113,7 @@ def run(
         plots=True,
         callbacks=Callbacks(),
         compute_loss=None,
+        model_type: ModelType = ModelType.SINGLE
 ):
     # Initialize/load model and set device
     training = model is not None
@@ -199,8 +201,21 @@ def run(
             preds, train_out = model(im) if compute_loss else (model(im, augment=augment), None)
 
         # Loss
-        if compute_loss:
-            loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+        if model_type == ModelType.DUAL:
+            if compute_loss:
+                preds = preds[1]
+                #train_out = train_out[1]
+                #loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+            else:
+                preds = preds[0][1]
+        elif model_type == ModelType.TRIPLE:
+            preds = preds[2]
+            # if compute_loss:
+            #     train_out = train_out[2]
+            #     loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+        else:
+            if compute_loss:
+                loss += compute_loss(train_out, targets)[1]  # box, obj, cls
 
         # NMS
         targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
@@ -327,7 +342,7 @@ def run(
 
 
 def parse_opt():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco.yaml', help='dataset.yaml path')
     parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='model path(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
@@ -351,6 +366,7 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--min-items', type=int, default=0, help='Experimental')
+    parser.add_argument('--model-type', type=ModelType, choices=list(ModelType), default='single', help='the type of model used to run')
     opt = parser.parse_args()
     opt.data = check_yaml(opt.data)  # check YAML
     opt.save_json |= opt.data.endswith('coco.yaml')

@@ -5,6 +5,7 @@ from pathlib import Path
 import torch
 
 from yolov9.models.common import DetectMultiBackend
+from yolov9.utils import ModelType
 from yolov9.utils.dataloaders import (
     IMG_FORMATS,
     VID_FORMATS,
@@ -61,6 +62,7 @@ def run(
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         vid_stride=1,  # video frame-rate stride
+        model_type: ModelType = ModelType.SINGLE,
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -108,6 +110,11 @@ def run(
         with dt[1]:
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
             pred = model(im, augment=augment, visualize=visualize)
+        if model_type == ModelType.DUAL:
+            pred = pred[0][1]
+        elif model_type == ModelType.TRIPLE:
+            # follow val.py in triple model type
+            pred = pred[2]
 
         # NMS
         with dt[2]:
@@ -199,7 +206,7 @@ def run(
 
 
 def parse_opt():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='model path or triton URL')
     parser.add_argument('--source', type=str, default=WORKDIR_ROOT / 'data/images', help='file/dir/URL/glob/screen/0(webcam)')
     parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
@@ -227,6 +234,7 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
+    parser.add_argument('--model-type', type=ModelType, choices=list(ModelType), default='single', help='the type of model used to run')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(vars(opt))

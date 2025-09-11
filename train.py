@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from yolov9.models.experimental import attempt_load
 from yolov9.models.yolo import Model
+from yolov9.utils import ModelType
 from yolov9.utils.autobatch import check_train_batch_size
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.dataloaders import create_dataloader
@@ -53,6 +54,11 @@ from yolov9.utils.general import (
 from yolov9.utils.loggers import Loggers
 from yolov9.utils.loggers.comet.comet_utils import check_comet_resume
 from yolov9.utils.loss_tal import ComputeLoss
+from yolov9.utils.loss_tal_dual import ComputeLoss as DualComputeLoss
+
+#from yolov9.utils.loss_tal_dual import ComputeLossLH as DualComputeLoss
+#from yolov9.utils.loss_tal_dual import ComputeLossLHCF as DualComputeLoss
+from yolov9.utils.loss_tal_triple import ComputeLoss as TripleComputeLoss
 from yolov9.utils.metrics import fitness
 from yolov9.utils.plots import plot_evolve
 from yolov9.utils.torch_utils import (
@@ -73,7 +79,9 @@ if str(ROOT) not in sys.path:
 
 import val as validate  # for end-of-epoch mAP  # noqa: E402
 
-GIT_INFO = None
+GIT_INFO = None#check_git_info()
+
+LOSS_MAP = dict(single=ComputeLoss, dual=DualComputeLoss, triple=TripleComputeLoss)
 
 
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
@@ -178,6 +186,16 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     else:
         lf = lambda x: (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear
 
+    # commented in train_dual.py
+    # def lf(x):  # saw
+    #     return (1 - (x % 30) / 30) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+    #
+    # def lf(x):  # triangle start at min
+    #     return 2 * abs(x / 30 - math.floor(x / 30 + 1 / 2)) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+    #
+    # def lf(x):  # triangle start at max
+    #     return 2 * abs(x / 32 + .5 - math.floor(x / 32 + 1)) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     # from yolov9.utils.plots import plot_lr_scheduler; plot_lr_scheduler(optimizer, scheduler, epochs)
 
@@ -271,7 +289,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     scheduler.last_epoch = start_epoch - 1  # do not move
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
     stopper, stop = EarlyStopping(patience=opt.patience), False
-    compute_loss = ComputeLoss(model)  # init loss class
+    compute_loss = LOSS_MAP[str(opt.model_type)](model)  # init loss class
     callbacks.run('on_train_start')
     LOGGER.info(f'Image sizes {imgsz} train, {imgsz} val\n'
                 f'Using {train_loader.num_workers * WORLD_SIZE} dataloader workers\n'
@@ -380,7 +398,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                                                 save_dir=save_dir,
                                                 plots=False,
                                                 callbacks=callbacks,
-                                                compute_loss=compute_loss)
+                                                compute_loss=compute_loss,
+                                                model_type=opt.model_type)
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -432,6 +451,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 else:
                     strip_optimizer(f, best_striped)  # strip optimizers
                 if f is best:
+                    # follow train_dual.py, train_triple.py
+                    if opt.model_type != ModelType.SINGLE:
+                        f = best_striped
                     LOGGER.info(f'\nValidating {f}...')
                     results, _, _ = validate.run(
                         data_dict,
@@ -445,7 +467,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                         verbose=True,
                         plots=plots,
                         callbacks=callbacks,
-                        compute_loss=compute_loss)  # val best model with plots
+                        compute_loss=compute_loss,
+                        model_type=opt.model_type)  # val best model with plots
                     if is_coco:
                         callbacks.run('on_fit_epoch_end', list(mloss) + list(results) + lr, epoch, best_fitness, fi)
 
@@ -456,7 +479,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 
 def parse_opt(known=False):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('--weights', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='initial weights path')
     # parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--weights', type=str, default='', help='initial weights path')
@@ -487,8 +510,8 @@ def parse_opt(known=False):
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--cos-lr', action='store_true', help='cosine LR scheduler')
-    parser.add_argument('--flat-cos-lr', action='store_true', help='flat cosine LR scheduler')
-    parser.add_argument('--fixed-lr', action='store_true', help='fixed LR scheduler')
+    parser.add_argument('--flat-cos-lr', action='store_true', help='flat cosine LR scheduler (only works in single model type)')
+    parser.add_argument('--fixed-lr', action='store_true', help='fixed LR scheduler (only works in single model type)')
     parser.add_argument('--label-smoothing', type=float, default=0.0, help='Label smoothing epsilon')
     parser.add_argument('--patience', type=int, default=100, help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone=10, first3=0 1 2')
@@ -497,6 +520,7 @@ def parse_opt(known=False):
     parser.add_argument('--local_rank', type=int, default=-1, help='Automatic DDP Multi-GPU argument, do not modify')
     parser.add_argument('--min-items', type=int, default=0, help='Experimental')
     parser.add_argument('--close-mosaic', type=int, default=0, help='Experimental')
+    parser.add_argument('--model-type', type=ModelType, choices=list(ModelType), default='single', help='the type of model used to run')
 
     # Logger arguments
     parser.add_argument('--entity', default=None, help='Entity')
@@ -511,6 +535,8 @@ def main(opt, callbacks=Callbacks()):
     # Checks
     if RANK in {-1, 0}:
         print_args(vars(opt))
+        #check_git_status()
+        #check_requirements()
 
     # Resume (from specified or most recent last.pt)
     if opt.resume and not check_comet_resume(opt) and not opt.evolve:
