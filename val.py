@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +32,15 @@ from yolov9.utils.general import (
 from yolov9.utils.metrics import ConfusionMatrix, ap_per_class, box_iou
 from yolov9.utils.plots import output_to_target, plot_images, plot_val_study
 from yolov9.utils.torch_utils import select_device, smart_inference_mode
+
+
+class ModelType(Enum):
+    SINGLE = "single"
+    DUAL = "dual"
+    TRIPLE = "triple"
+
+    def __str__(self):
+        return self.value
 
 
 def save_one_txt(predn, save_conf, shape, file):
@@ -112,6 +122,7 @@ def run(
         plots=True,
         callbacks=Callbacks(),
         compute_loss=None,
+        model_type: ModelType = ModelType.SINGLE
 ):
     # Initialize/load model and set device
     training = model is not None
@@ -199,8 +210,21 @@ def run(
             preds, train_out = model(im) if compute_loss else (model(im, augment=augment), None)
 
         # Loss
-        if compute_loss:
-            loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+        if model_type == ModelType.DUAL:
+            if compute_loss:
+                preds = preds[1]
+                #train_out = train_out[1]
+                #loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+            else:
+                preds = preds[0][1]
+        elif model_type == ModelType.TRIPLE:
+            preds = preds[2]
+            train_out = train_out[2]
+            # if compute_loss:
+            #     loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+        else:
+            if compute_loss:
+                loss += compute_loss(train_out, targets)[1]  # box, obj, cls
 
         # NMS
         targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
@@ -351,6 +375,7 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--min-items', type=int, default=0, help='Experimental')
+    parser.add_argument('--model-type', type=ModelType, choices=list(ModelType), default='single', help='the type of model used to run')
     opt = parser.parse_args()
     opt.data = check_yaml(opt.data)  # check YAML
     opt.save_json |= opt.data.endswith('coco.yaml')
