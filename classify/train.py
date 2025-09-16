@@ -23,7 +23,6 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-import torch.distributed as dist
 import torch.hub as hub
 import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
@@ -59,6 +58,7 @@ from yolov9.utils.torch_utils import (
     model_info,
     reshape_classifier_output,
     select_device,
+    setup_distributed,
     smart_DDP,
     smart_optimizer,
     smartCrossEntropyLoss,
@@ -329,10 +329,7 @@ def main(opt):
     if LOCAL_RANK != -1:
         assert opt.batch_size != -1, 'AutoBatch is coming soon for classification, please pass a valid --batch-size'
         assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
-        torch.cuda.set_device(LOCAL_RANK)
-        device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+        device = setup_distributed()
 
     # Parameters
     opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok)  # increment run
