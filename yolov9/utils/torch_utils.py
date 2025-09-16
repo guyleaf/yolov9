@@ -6,6 +6,7 @@ import time
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
+from datetime import timedelta
 from pathlib import Path
 
 import torch
@@ -32,6 +33,19 @@ except ImportError:
 # Suppress PyTorch warnings
 warnings.filterwarnings('ignore', message='User provided device_type of \'cuda\', but CUDA is not available. Disabling')
 warnings.filterwarnings('ignore', category=UserWarning)
+
+
+def setup_distributed(local_rank: int = LOCAL_RANK):
+    assert torch.cuda.device_count() > local_rank, 'insufficient CUDA devices for DDP command'
+    torch.cuda.set_device(local_rank)
+    device = torch.device('cuda', local_rank)
+    # follow the ultralytics repo, avoid timeout in data caching (default is 30mins)
+    os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"  # set to enforce timeout
+    dist.init_process_group(
+        backend="nccl" if dist.is_nccl_available() else "gloo",
+        timeout=timedelta(seconds=10800),  # 3 hours
+    )
+    return device
 
 
 def smart_inference_mode(torch_1_9=check_version(torch.__version__, '1.9.0')):
