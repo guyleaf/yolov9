@@ -397,10 +397,10 @@ class TripleDDetect(nn.Module):
         dbox2 = dist2bbox(self.dfl2(box2), self.anchors.unsqueeze(0), xywh=True, dim=1) * self.strides
         box3, cls3 = torch.cat([di.view(shape[0], self.no, -1) for di in d3], 2).split((self.reg_max * 4, self.nc), 1)
         dbox3 = dist2bbox(self.dfl3(box3), self.anchors.unsqueeze(0), xywh=True, dim=1) * self.strides
-        #y = [torch.cat((dbox, cls.sigmoid()), 1), torch.cat((dbox2, cls2.sigmoid()), 1), torch.cat((dbox3, cls3.sigmoid()), 1)]
-        #return y if self.export else (y, [d1, d2, d3])
-        y = torch.cat((dbox3, cls3.sigmoid()), 1)
-        return y if self.export else (y, d3)
+        y = [torch.cat((dbox, cls.sigmoid()), 1), torch.cat((dbox2, cls2.sigmoid()), 1), torch.cat((dbox3, cls3.sigmoid()), 1)]
+        return y if self.export else (y, [d1, d2, d3])
+        # y = torch.cat((dbox3, cls3.sigmoid()), 1)
+        # return y if self.export else (y, d3)
 
     def bias_init(self):
         # Initialize Detect() biases, WARNING: requires stride availability
