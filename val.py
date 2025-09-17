@@ -8,9 +8,9 @@ import torch
 from tqdm import tqdm
 
 from yolov9.models.common import DetectMultiBackend
-from yolov9.utils import ModelType
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.dataloaders import create_dataloader
+from yolov9.utils.enums import ModelType
 from yolov9.utils.general import (
     LOGGER,
     TQDM_BAR_FORMAT,

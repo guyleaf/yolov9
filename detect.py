@@ -5,7 +5,6 @@ from pathlib import Path
 import torch
 
 from yolov9.models.common import DetectMultiBackend
-from yolov9.utils import ModelType
 from yolov9.utils.dataloaders import (
     IMG_FORMATS,
     VID_FORMATS,
@@ -13,6 +12,7 @@ from yolov9.utils.dataloaders import (
     LoadScreenshots,
     LoadStreams,
 )
+from yolov9.utils.enums import ModelType
 from yolov9.utils.general import (
     LOGGER,
     WORKDIR_ROOT,

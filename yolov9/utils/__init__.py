@@ -1,7 +1,6 @@
 import contextlib
 import platform
 import threading
-from enum import Enum
 
 
 def emojis(str=''):
@@ -21,15 +20,6 @@ class TryExcept(contextlib.ContextDecorator):
         if value:
             print(emojis(f"{self.msg}{': ' if self.msg else ''}{value}"))
         return True
-
-
-class ModelType(Enum):
-    SINGLE = "single"
-    DUAL = "dual"
-    TRIPLE = "triple"
-
-    def __str__(self):
-        return self.value
 
 
 def threaded(func):

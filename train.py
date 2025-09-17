@@ -18,11 +18,11 @@ from tqdm import tqdm
 
 from yolov9.models.experimental import attempt_load
 from yolov9.models.yolo import Model
-from yolov9.utils import ModelType
 from yolov9.utils.autobatch import check_train_batch_size
 from yolov9.utils.callbacks import Callbacks
 from yolov9.utils.dataloaders import create_dataloader
 from yolov9.utils.downloads import attempt_download, is_url
+from yolov9.utils.enums import ModelType
 from yolov9.utils.general import (
     LOCAL_RANK,
     LOGGER,
