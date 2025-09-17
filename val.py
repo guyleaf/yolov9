@@ -198,24 +198,16 @@ def run(
 
         # Inference
         with dt[1]:
-            preds, train_out = model(im) if compute_loss else (model(im, augment=augment), None)
+            preds, train_out = model(im) if compute_loss else model(im, augment=augment)
+
+        # Unpack the sequence and use the last output
+        if not isinstance(preds, torch.Tensor):
+            preds = preds[-1]
 
         # Loss
-        if model_type == ModelType.DUAL:
-            if compute_loss:
-                preds = preds[1]
-                #train_out = train_out[1]
-                #loss += compute_loss(train_out, targets)[1]  # box, obj, cls
-            else:
-                preds = preds[0][1]
-        elif model_type == ModelType.TRIPLE:
-            preds = preds[2]
-            # if compute_loss:
-            #     train_out = train_out[2]
-            #     loss += compute_loss(train_out, targets)[1]  # box, obj, cls
-        else:
-            if compute_loss:
-                loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+        if compute_loss:
+            assert train_out is not None, "The outputs are missing for loss calculation."
+            loss += compute_loss(train_out, targets)[1]  # box, obj, cls
 
         # NMS
         targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
