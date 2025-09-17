@@ -549,6 +549,8 @@ def main(opt, callbacks=Callbacks()):
                 d = yaml.safe_load(f)
         else:
             d = torch.load(last, map_location='cpu')['opt']
+        if "model_type" not in d:  # for backward compatibility, keep model_type if not exist.
+            d["model_type"] = opt.model_type
         opt = argparse.Namespace(**d)  # replace
         opt.cfg, opt.weights, opt.resume = '', str(last), True  # reinstate
         if is_url(opt_data):
