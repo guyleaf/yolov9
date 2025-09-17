@@ -1,37 +1,55 @@
 import argparse
 import json
 import os
-import sys
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import numpy as np
 import torch
-from tqdm import tqdm
-
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLO root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 from pycocotools import mask as maskUtils
-from models.common import DetectMultiBackend
-from models.yolo import SegmentationModel
-from utils.callbacks import Callbacks
-from utils.coco_utils import getCocoIds, getMappingId, getMappingIndex
-from utils.general import (LOGGER, NUM_THREADS, TQDM_BAR_FORMAT, Profile, check_dataset, check_img_size,
-                           check_requirements, check_yaml, coco80_to_coco91_class, colorstr, increment_path,
-                           non_max_suppression, print_args, scale_boxes, xywh2xyxy, xyxy2xywh)
-from utils.metrics import ConfusionMatrix, box_iou
-from utils.plots import output_to_target, plot_val_study
-from utils.panoptic.dataloaders import create_dataloader
-from utils.panoptic.general import mask_iou, process_mask, process_mask_upsample, scale_image
-from utils.panoptic.metrics import Metrics, ap_per_class_box_and_mask, Semantic_Metrics
-from utils.panoptic.plots import plot_images_and_masks
-from utils.torch_utils import de_parallel, select_device, smart_inference_mode
+from tqdm import tqdm
+
+from yolov9.models.common import DetectMultiBackend
+from yolov9.models.yolo import SegmentationModel
+from yolov9.utils.callbacks import Callbacks
+from yolov9.utils.coco_utils import getCocoIds, getMappingId, getMappingIndex
+from yolov9.utils.general import (
+    LOGGER,
+    NUM_THREADS,
+    TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
+    Profile,
+    check_dataset,
+    check_img_size,
+    check_requirements,
+    check_yaml,
+    coco80_to_coco91_class,
+    colorstr,
+    increment_path,
+    non_max_suppression,
+    print_args,
+    scale_boxes,
+    xywh2xyxy,
+    xyxy2xywh,
+)
+from yolov9.utils.metrics import ConfusionMatrix, box_iou
+from yolov9.utils.panoptic.dataloaders import create_dataloader
+from yolov9.utils.panoptic.general import (
+    mask_iou,
+    process_mask,
+    process_mask_upsample,
+    scale_image,
+)
+from yolov9.utils.panoptic.metrics import (
+    Metrics,
+    Semantic_Metrics,
+    ap_per_class_box_and_mask,
+)
+from yolov9.utils.panoptic.plots import plot_images_and_masks
+from yolov9.utils.plots import output_to_target, plot_val_study
+from yolov9.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
 
 def save_one_txt(predn, save_conf, shape, file):
@@ -124,7 +142,7 @@ def run(
         save_hybrid=False,  # save label+prediction hybrid results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
         save_json=False,  # save a COCO-JSON results file
-        project=ROOT / 'runs/val-pan',  # save to project/name
+        project=WORKDIR_ROOT / 'runs/val-pan',  # save to project/name
         name='exp',  # save to project/name
         exist_ok=False,  # existing project/name ok, do not increment
         half=True,  # use FP16 half-precision inference
@@ -179,7 +197,7 @@ def run(
     model.eval()
     cuda = device.type != 'cpu'
     #is_coco = isinstance(data.get('val'), str) and data['val'].endswith(f'coco{os.sep}val2017.txt')  # COCO dataset
-    is_coco = isinstance(data.get('val'), str) and data['val'].endswith(f'val2017.txt')  # COCO dataset
+    is_coco = isinstance(data.get('val'), str) and data['val'].endswith('val2017.txt')  # COCO dataset
     nc = 1 if single_cls else int(data['nc'])  # number of classes
     stuff_names = data.get('stuff_names', [])  # names of stuff classes
     stuff_nc = len(stuff_names)  # number of stuff classes
@@ -491,9 +509,9 @@ def run(
             map_bbox, map50_bbox, map_mask, map50_mask = results
 
             # Semantic Segmentation
-            from utils.stuff_seg.cocostuffeval import COCOStuffeval
+            from yolov9.utils.stuff_seg.cocostuffeval import COCOStuffeval
 
-            LOGGER.info(f'\nEvaluating pycocotools stuff... ')
+            LOGGER.info('\nEvaluating pycocotools stuff... ')
             imgIds = [int(x) for x in img_id_list]
 
             stuffGt = COCO(semantic_anno_json)  # initialize COCO ground truth api
@@ -529,8 +547,8 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128-pan.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolo-pan.pt', help='model path(s)')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128-pan.yaml', help='dataset.yaml path')
+    parser.add_argument('--weights', nargs='+', type=str, default=WORKDIR_ROOT / 'yolo-pan.pt', help='model path(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
@@ -546,7 +564,7 @@ def parse_opt():
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-json', action='store_true', help='save a COCO-JSON results file')
-    parser.add_argument('--project', default=ROOT / 'runs/val-pan', help='save results to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/val-pan', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')

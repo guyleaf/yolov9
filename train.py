@@ -16,36 +16,73 @@ import yaml
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 
+from yolov9.models.experimental import attempt_load
+from yolov9.models.yolo import Model
+from yolov9.utils.autobatch import check_train_batch_size
+from yolov9.utils.callbacks import Callbacks
+from yolov9.utils.dataloaders import create_dataloader
+from yolov9.utils.downloads import attempt_download, is_url
+from yolov9.utils.enums import ModelType
+from yolov9.utils.general import (
+    LOCAL_RANK,
+    LOGGER,
+    RANK,
+    TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
+    WORLD_SIZE,
+    check_amp,
+    check_dataset,
+    check_file,
+    check_img_size,
+    check_suffix,
+    check_yaml,
+    colorstr,
+    get_latest_run,
+    increment_path,
+    init_seeds,
+    intersect_dicts,
+    labels_to_class_weights,
+    labels_to_image_weights,
+    methods,
+    one_cycle,
+    one_flat_cycle,
+    print_args,
+    print_mutation,
+    strip_optimizer,
+    yaml_save,
+)
+from yolov9.utils.loggers import Loggers
+from yolov9.utils.loggers.comet.comet_utils import check_comet_resume
+from yolov9.utils.loss_tal import ComputeLoss
+from yolov9.utils.loss_tal_dual import ComputeLoss as DualComputeLoss
+
+#from yolov9.utils.loss_tal_dual import ComputeLossLH as DualComputeLoss
+#from yolov9.utils.loss_tal_dual import ComputeLossLHCF as DualComputeLoss
+from yolov9.utils.loss_tal_triple import ComputeLoss as TripleComputeLoss
+from yolov9.utils.metrics import fitness
+from yolov9.utils.plots import plot_evolve
+from yolov9.utils.torch_utils import (
+    EarlyStopping,
+    ModelEMA,
+    de_parallel,
+    select_device,
+    setup_distributed,
+    smart_DDP,
+    smart_optimizer,
+    smart_resume,
+    torch_distributed_zero_first,
+)
+
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # root directory
+ROOT = FILE.parents[0]
 if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+    sys.path.append(str(ROOT))
 
-import val as validate  # for end-of-epoch mAP
-from models.experimental import attempt_load
-from models.yolo import Model
-from utils.autoanchor import check_anchors
-from utils.autobatch import check_train_batch_size
-from utils.callbacks import Callbacks
-from utils.dataloaders import create_dataloader
-from utils.downloads import attempt_download, is_url
-from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset, check_file, check_img_size,
-                           check_suffix, check_yaml, colorstr, get_latest_run, increment_path, init_seeds,
-                           intersect_dicts, labels_to_class_weights, labels_to_image_weights, methods,
-                           one_cycle, one_flat_cycle, print_args, print_mutation, strip_optimizer, yaml_save)
-from utils.loggers import Loggers
-from utils.loggers.comet.comet_utils import check_comet_resume
-from utils.loss_tal import ComputeLoss
-from utils.metrics import fitness
-from utils.plots import plot_evolve
-from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP,
-                               smart_optimizer, smart_resume, torch_distributed_zero_first)
+import val as validate  # for end-of-epoch mAP  # noqa: E402
 
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
-WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
-GIT_INFO = None
+GIT_INFO = None#check_git_info()
+
+LOSS_MAP = dict(single=ComputeLoss, dual=DualComputeLoss, triple=TripleComputeLoss)
 
 
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
@@ -150,8 +187,18 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     else:
         lf = lambda x: (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear
 
+    # commented in train_dual.py
+    # def lf(x):  # saw
+    #     return (1 - (x % 30) / 30) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+    #
+    # def lf(x):  # triangle start at min
+    #     return 2 * abs(x / 30 - math.floor(x / 30 + 1 / 2)) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+    #
+    # def lf(x):  # triangle start at max
+    #     return 2 * abs(x / 32 + .5 - math.floor(x / 32 + 1)) * (1 - x / epochs) * (1.0 - hyp['lrf']) + hyp['lrf']
+
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
-    # from utils.plots import plot_lr_scheduler; plot_lr_scheduler(optimizer, scheduler, epochs)
+    # from yolov9.utils.plots import plot_lr_scheduler; plot_lr_scheduler(optimizer, scheduler, epochs)
 
     # EMA
     ema = ModelEMA(model) if RANK in {-1, 0} else None
@@ -243,7 +290,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     scheduler.last_epoch = start_epoch - 1  # do not move
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
     stopper, stop = EarlyStopping(patience=opt.patience), False
-    compute_loss = ComputeLoss(model)  # init loss class
+    compute_loss = LOSS_MAP[str(opt.model_type)](model)  # init loss class
     callbacks.run('on_train_start')
     LOGGER.info(f'Image sizes {imgsz} train, {imgsz} val\n'
                 f'Using {train_loader.num_workers * WORLD_SIZE} dataloader workers\n'
@@ -352,7 +399,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                                                 save_dir=save_dir,
                                                 plots=False,
                                                 callbacks=callbacks,
-                                                compute_loss=compute_loss)
+                                                compute_loss=compute_loss,
+                                                model_type=opt.model_type)
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -404,6 +452,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 else:
                     strip_optimizer(f, best_striped)  # strip optimizers
                 if f is best:
+                    # follow train_dual.py, train_triple.py
+                    if opt.model_type != ModelType.SINGLE:
+                        f = best_striped
                     LOGGER.info(f'\nValidating {f}...')
                     results, _, _ = validate.run(
                         data_dict,
@@ -417,7 +468,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                         verbose=True,
                         plots=plots,
                         callbacks=callbacks,
-                        compute_loss=compute_loss)  # val best model with plots
+                        compute_loss=compute_loss,
+                        model_type=opt.model_type)  # val best model with plots
                     if is_coco:
                         callbacks.run('on_fit_epoch_end', list(mloss) + list(results) + lr, epoch, best_fitness, fi)
 
@@ -428,13 +480,13 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 
 def parse_opt(known=False):
-    parser = argparse.ArgumentParser()
-    # parser.add_argument('--weights', type=str, default=ROOT / 'yolo.pt', help='initial weights path')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # parser.add_argument('--weights', type=str, default=WORKDIR_ROOT / 'yolo.pt', help='initial weights path')
     # parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--weights', type=str, default='', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='yolo.yaml', help='model.yaml path')
-    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
-    parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
+    parser.add_argument('--data', type=str, default=WORKDIR_ROOT / 'data/coco128.yaml', help='dataset.yaml path')
+    parser.add_argument('--hyp', type=str, default=WORKDIR_ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=100, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
@@ -454,13 +506,13 @@ def parse_opt(known=False):
     parser.add_argument('--optimizer', type=str, choices=['SGD', 'Adam', 'AdamW', 'LION'], default='SGD', help='optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--project', default=ROOT / 'runs/train', help='save to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/train', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--cos-lr', action='store_true', help='cosine LR scheduler')
-    parser.add_argument('--flat-cos-lr', action='store_true', help='flat cosine LR scheduler')
-    parser.add_argument('--fixed-lr', action='store_true', help='fixed LR scheduler')
+    parser.add_argument('--flat-cos-lr', action='store_true', help='flat cosine LR scheduler (only works in single model type)')
+    parser.add_argument('--fixed-lr', action='store_true', help='fixed LR scheduler (only works in single model type)')
     parser.add_argument('--label-smoothing', type=float, default=0.0, help='Label smoothing epsilon')
     parser.add_argument('--patience', type=int, default=100, help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone=10, first3=0 1 2')
@@ -469,6 +521,7 @@ def parse_opt(known=False):
     parser.add_argument('--local_rank', type=int, default=-1, help='Automatic DDP Multi-GPU argument, do not modify')
     parser.add_argument('--min-items', type=int, default=0, help='Experimental')
     parser.add_argument('--close-mosaic', type=int, default=0, help='Experimental')
+    parser.add_argument('--model-type', type=ModelType, choices=list(ModelType), default='single', help='the type of model used to run')
 
     # Logger arguments
     parser.add_argument('--entity', default=None, help='Entity')
@@ -483,6 +536,8 @@ def main(opt, callbacks=Callbacks()):
     # Checks
     if RANK in {-1, 0}:
         print_args(vars(opt))
+        #check_git_status()
+        #check_requirements()
 
     # Resume (from specified or most recent last.pt)
     if opt.resume and not check_comet_resume(opt) and not opt.evolve:
@@ -494,6 +549,8 @@ def main(opt, callbacks=Callbacks()):
                 d = yaml.safe_load(f)
         else:
             d = torch.load(last, map_location='cpu')['opt']
+        if "model_type" not in d:  # for backward compatibility, keep model_type if not exist.
+            d["model_type"] = opt.model_type
         opt = argparse.Namespace(**d)  # replace
         opt.cfg, opt.weights, opt.resume = '', str(last), True  # reinstate
         if is_url(opt_data):
@@ -503,8 +560,8 @@ def main(opt, callbacks=Callbacks()):
             check_file(opt.data), check_yaml(opt.cfg), check_yaml(opt.hyp), str(opt.weights), str(opt.project)  # checks
         assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
         if opt.evolve:
-            if opt.project == str(ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
-                opt.project = str(ROOT / 'runs/evolve')
+            if opt.project == str(WORKDIR_ROOT / 'runs/train'):  # if default project name, rename to runs/evolve
+                opt.project = str(WORKDIR_ROOT / 'runs/evolve')
             opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
         if opt.name == 'cfg':
             opt.name = Path(opt.cfg).stem  # use model.yaml as name
@@ -518,10 +575,7 @@ def main(opt, callbacks=Callbacks()):
         assert not opt.evolve, f'--evolve {msg}'
         assert opt.batch_size != -1, f'AutoBatch with --batch-size -1 {msg}, please pass a valid --batch-size'
         assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
-        torch.cuda.set_device(LOCAL_RANK)
-        device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+        device = setup_distributed()
 
     # Train
     if not opt.evolve:

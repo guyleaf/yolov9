@@ -23,33 +23,55 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-import torch.distributed as dist
 import torch.hub as hub
 import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 from torch.cuda import amp
 from tqdm import tqdm
 
+from yolov9.models.experimental import attempt_load
+from yolov9.models.yolo import ClassificationModel, DetectionModel
+from yolov9.utils.dataloaders import create_classification_dataloader
+from yolov9.utils.general import (
+    DATASETS_DIR,
+    LOCAL_RANK,
+    LOGGER,
+    RANK,
+    TQDM_BAR_FORMAT,
+    WORKDIR_ROOT,
+    WORLD_SIZE,
+    WorkingDirectory,
+    check_git_info,
+    check_git_status,
+    check_requirements,
+    colorstr,
+    download,
+    increment_path,
+    init_seeds,
+    print_args,
+    yaml_save,
+)
+from yolov9.utils.loggers import GenericLogger
+from yolov9.utils.plots import imshow_cls
+from yolov9.utils.torch_utils import (
+    ModelEMA,
+    model_info,
+    reshape_classifier_output,
+    select_device,
+    setup_distributed,
+    smart_DDP,
+    smart_optimizer,
+    smartCrossEntropyLoss,
+    torch_distributed_zero_first,
+)
+
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1]  # YOLOv5 root directory
+ROOT = FILE.parents[1]
 if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+    sys.path.append(str(ROOT))
 
-from classify import val as validate
-from models.experimental import attempt_load
-from models.yolo import ClassificationModel, DetectionModel
-from utils.dataloaders import create_classification_dataloader
-from utils.general import (DATASETS_DIR, LOGGER, TQDM_BAR_FORMAT, WorkingDirectory, check_git_info, check_git_status,
-                           check_requirements, colorstr, download, increment_path, init_seeds, print_args, yaml_save)
-from utils.loggers import GenericLogger
-from utils.plots import imshow_cls
-from utils.torch_utils import (ModelEMA, model_info, reshape_classifier_output, select_device, smart_DDP,
-                               smart_optimizer, smartCrossEntropyLoss, torch_distributed_zero_first)
+import classify.val as validate  # noqa: E402
 
-LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
-RANK = int(os.getenv('RANK', -1))
-WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 GIT_INFO = check_git_info()
 
 
@@ -72,7 +94,7 @@ def train(opt, device):
     logger = GenericLogger(opt=opt, console_logger=LOGGER) if RANK in {-1, 0} else None
 
     # Download Dataset
-    with torch_distributed_zero_first(LOCAL_RANK), WorkingDirectory(ROOT):
+    with torch_distributed_zero_first(LOCAL_RANK), WorkingDirectory(WORKDIR_ROOT):
         data_dir = data if data.is_dir() else (DATASETS_DIR / data)
         if not data_dir.is_dir():
             LOGGER.info(f'\nDataset not found ⚠️, missing path {data_dir}, attempting download...')
@@ -106,7 +128,7 @@ def train(opt, device):
                                                       workers=nw)
 
     # Model
-    with torch_distributed_zero_first(LOCAL_RANK), WorkingDirectory(ROOT):
+    with torch_distributed_zero_first(LOCAL_RANK), WorkingDirectory(WORKDIR_ROOT):
         if Path(opt.model).is_file() or opt.model.endswith('.pt'):
             model = attempt_load(opt.model, device='cpu', fuse=False)
         elif opt.model in torchvision.models.__dict__:  # TorchVision models i.e. resnet50, efficientnet_b0
@@ -279,7 +301,7 @@ def parse_opt(known=False):
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='--cache images in "ram" (default) or "disk"')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
-    parser.add_argument('--project', default=ROOT / 'runs/train-cls', help='save to project/name')
+    parser.add_argument('--project', default=WORKDIR_ROOT / 'runs/train-cls', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--pretrained', nargs='?', const=True, default=True, help='start from i.e. --pretrained False')
@@ -307,10 +329,7 @@ def main(opt):
     if LOCAL_RANK != -1:
         assert opt.batch_size != -1, 'AutoBatch is coming soon for classification, please pass a valid --batch-size'
         assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'
-        assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
-        torch.cuda.set_device(LOCAL_RANK)
-        device = torch.device('cuda', LOCAL_RANK)
-        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+        device = setup_distributed()
 
     # Parameters
     opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok)  # increment run
