@@ -143,8 +143,6 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             weights = attempt_download(weights)  # download if not found locally
         ckpt = torch.load(weights, map_location='cpu')  # load checkpoint to CPU to avoid CUDA memory leak
         model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
-        # FIXME: Does it really need to remove anchor weights if using cfg.
-        # Because in some cases, we fine-tune the model with anchors prior.
         exclude = ['anchor'] if (cfg or hyp.get('anchors')) and not resume else []  # exclude keys
         model.load(ckpt, resume=resume, exclude=exclude) # load
     else:
