@@ -6,7 +6,14 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 
-from yolov9.utils.general import LOGGER, ROOT, check_yaml, make_divisible, print_args
+from yolov9.utils.general import (
+    LOGGER,
+    ROOT,
+    check_yaml,
+    exclude_dict,
+    make_divisible,
+    print_args,
+)
 from yolov9.utils.plots import feature_visualization
 from yolov9.utils.tal.anchor_generator import dist2bbox, make_anchors
 from yolov9.utils.torch_utils import (
@@ -577,6 +584,29 @@ class BaseModel(nn.Module):
             m.strides = fn(m.strides)
             # m.grid = list(map(fn, m.grid))
         return self
+
+    def load(self, weights, resume=False, exclude=[], verbose=True):
+        """
+        Load weights into the model.
+
+        Args:
+            weights (dict | torch.nn.Module): The pre-trained weights to be loaded.
+            resume (bool, optional): Whether it is resumed from weights.
+            exclude (list, optional): If not resume, exclude specific params from weights. Otherwise, no functionality.
+            verbose (bool, optional): Whether to log the transfer progress.
+        """
+        model: BaseModel = weights["model"] if isinstance(weights, dict) else weights  # torchvision models are not dicts
+        csd = model.float().state_dict()  # checkpoint state_dict as FP32
+        # NOTE: In my opinion, resume => must have consistent cfg
+        if not resume:
+            # NOTE: the original impl uses intersect_dicts() but it will hide the incompatible info from weights.
+            # So, I create a function for only excluding, exclude_dict().
+            csd = exclude_dict(csd, exclude=exclude)  # exclude
+        incompatible_keys = self.load_state_dict(csd, strict=resume)  # load
+        if verbose:
+            LOGGER.info(f"Missing keys: {len(incompatible_keys.missing_keys)} items")
+            LOGGER.info(f"Unexpected keys: {len(incompatible_keys.unexpected_keys)} items")
+            LOGGER.info(f"Transferred {len(csd)}/{len(self.state_dict())} items from pretrained weights")
 
 
 class DetectionModel(BaseModel):

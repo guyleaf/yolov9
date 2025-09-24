@@ -38,7 +38,6 @@ from yolov9.utils.general import (
     get_latest_run,
     increment_path,
     init_seeds,
-    intersect_dicts,
     labels_to_class_weights,
     labels_to_image_weights,
     one_cycle,
@@ -125,10 +124,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         ckpt = torch.load(weights, map_location='cpu')  # load checkpoint to CPU to avoid CUDA memory leak
         model = SegmentationModel(cfg or ckpt['model'].yaml, ch=3, nc=nc).to(device)
         exclude = ['anchor'] if (cfg or hyp.get('anchors')) and not resume else []  # exclude keys
-        csd = ckpt['model'].float().state_dict()  # checkpoint state_dict as FP32
-        csd = intersect_dicts(csd, model.state_dict(), exclude=exclude)  # intersect
-        model.load_state_dict(csd, strict=False)  # load
-        LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
+        model.load(ckpt, resume=resume, exclude=exclude)  # load
     else:
         model = SegmentationModel(cfg, ch=3, nc=nc).to(device)  # create
     amp = check_amp(model)  # check AMP
@@ -173,7 +169,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     if pretrained:
         if resume:
             best_fitness, start_epoch, epochs = smart_resume(ckpt, optimizer, ema, weights, epochs, resume)
-        del ckpt, csd
+        del ckpt
 
     # DP mode
     if cuda and RANK == -1 and torch.cuda.device_count() > 1:
