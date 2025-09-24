@@ -29,7 +29,6 @@ def _create(name, pretrained=True, channels=3, classes=80, autoshape=True, verbo
     from yolov9.utils.general import (
         LOGGER,
         check_requirements,
-        intersect_dicts,
         logging,
     )
     from yolov9.utils.torch_utils import select_device
@@ -60,9 +59,7 @@ def _create(name, pretrained=True, channels=3, classes=80, autoshape=True, verbo
             model = DetectionModel(cfg, channels, classes)  # create model
             if pretrained:
                 ckpt = torch.load(attempt_download(path), map_location=device)  # load
-                csd = ckpt['model'].float().state_dict()  # checkpoint state_dict as FP32
-                csd = intersect_dicts(csd, model.state_dict(), exclude=['anchors'])  # intersect
-                model.load_state_dict(csd, strict=False)  # load
+                model.load(ckpt, exclude=['anchors'])  # load
                 if len(ckpt['model'].names) == classes:
                     model.names = ckpt['model'].names  # set class names attribute
         if not verbose:
