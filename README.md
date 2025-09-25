@@ -16,18 +16,24 @@ Implementation of paper - [YOLOv9: Learning What You Want to Learn Using Program
 
 
 ## Changelogs (fork)
+### Refactor
 - Remove duplicate codes
   - [x] Object Detection (PR [#1](https://github.com/guyleaf/yolov9/pull/1))
   - [ ] Segmentation
   - [ ] Panoptic Segmentation
 - [x] Make a consistent setup for distributed (PR [#2](https://github.com/guyleaf/yolov9/pull/2))
 - [x] Refactor codebase for better dev (PR [#3](https://github.com/guyleaf/yolov9/pull/3))
-- [x] Support customizing the behavior of loading checkpoint (PR [#4](https://github.com/guyleaf/yolov9/pull/4))
 - Improve the training flow for flexible semi-customization
   - [x] Object Detection (PR [#5](https://github.com/guyleaf/yolov9/pull/5))
   - [ ] Segmentation
   - [ ] Panoptic Segmentation
 
+### Feature
+- [x] Support customizing the behavior of loading checkpoint (PR [#4](https://github.com/guyleaf/yolov9/pull/4))
+- [x] Support None and int type in freeze argument (PR [#6](https://github.com/guyleaf/yolov9/pull/6))
+
+### Refactor (break compatibility)
+### Feature (break compatibility)
 
 ## Performance 
 
