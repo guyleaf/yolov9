@@ -198,7 +198,7 @@ def run(
 
         # Inference
         with dt[1]:
-            preds, train_out = model(im) if compute_loss else model(im, augment=augment)
+            preds, train_out = model(im, loss=True) if compute_loss else model(im, augment=augment)
 
         # Unpack the sequence and use the last output
         if not isinstance(preds, torch.Tensor):
