@@ -15,6 +15,20 @@ Implementation of paper - [YOLOv9: Learning What You Want to Learn Using Program
 </div>
 
 
+## Changelogs (fork)
+- Remove duplicate codes
+  - [x] Object Detection (PR [#1](https://github.com/guyleaf/yolov9/pull/1))
+  - [ ] Segmentation
+  - [ ] Panoptic Segmentation
+- [x] Make a consistent setup for distributed (PR [#2](https://github.com/guyleaf/yolov9/pull/2))
+- [x] Refactor codebase for better dev (PR [#3](https://github.com/guyleaf/yolov9/pull/3))
+- [x] Support customizing the behavior of loading checkpoint (PR [#4](https://github.com/guyleaf/yolov9/pull/4))
+- Improve the training flow for flexible semi-customization
+  - [x] Object Detection (PR [#5](https://github.com/guyleaf/yolov9/pull/5))
+  - [ ] Segmentation
+  - [ ] Panoptic Segmentation
+
+
 ## Performance 
 
 MS COCO
@@ -331,5 +345,6 @@ python caption/train.py --workers 8 --device 0 --batch 32  --data coco.yaml --im
 * [https://github.com/DingXiaoH/RepVGG](https://github.com/DingXiaoH/RepVGG)
 * [https://github.com/ultralytics/yolov5](https://github.com/ultralytics/yolov5)
 * [https://github.com/meituan/YOLOv6](https://github.com/meituan/YOLOv6)
+* [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 
 </details>
