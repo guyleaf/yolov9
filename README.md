@@ -27,6 +27,7 @@ Implementation of paper - [YOLOv9: Learning What You Want to Learn Using Program
   - [x] Object Detection (PR [#5](https://github.com/guyleaf/yolov9/pull/5))
   - [ ] Segmentation
   - [ ] Panoptic Segmentation
+- [x] Save tensorboard and wandb files in exp folder (PR [#8](https://github.com/guyleaf/yolov9/pull/8))
 
 ### Feature
 - [x] Support customizing the behavior of loading checkpoint (PR [#4](https://github.com/guyleaf/yolov9/pull/4))
