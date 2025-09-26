@@ -86,18 +86,19 @@ class Loggers():
             s = f"{prefix}run 'pip install comet_ml' to automatically track and visualize YOLO 🚀 runs in Comet"
             self.logger.info(s)
         # TensorBoard
-        s = self.save_dir
+        log_dir = self.save_dir / "summary"
         if 'tb' in self.include and not self.opt.evolve:
             prefix = colorstr('TensorBoard: ')
-            self.logger.info(f"{prefix}Start with 'tensorboard --logdir {s.parent}', view at http://localhost:6006/")
-            self.tb = SummaryWriter(str(s))
+            self.logger.info(f"{prefix}Start with 'tensorboard --logdir {log_dir.parent.parent}', view at http://localhost:6006/")
+            self.tb = SummaryWriter(str(log_dir))
 
         # W&B
         if wandb and 'wandb' in self.include:
+            log_dir = self.save_dir / "wandb"
             wandb_artifact_resume = isinstance(self.opt.resume, str) and self.opt.resume.startswith('wandb-artifact://')
             run_id = torch.load(self.weights).get('wandb_id') if self.opt.resume and not wandb_artifact_resume else None
             self.opt.hyp = self.hyp  # add hyperparameters
-            self.wandb = WandbLogger(self.opt, run_id)
+            self.wandb = WandbLogger(self.opt, run_id, save_dir=log_dir)
             # temp warn. because nested artifacts not supported after 0.12.10
             # if pkg.parse_version(wandb.__version__) >= pkg.parse_version('0.12.11'):
             #    s = "YOLO temporarily requires wandb version 0.12.10 or below. Some features may not work as expected."
@@ -313,14 +314,17 @@ class GenericLogger:
         self.include = include
         self.console_logger = console_logger
         self.csv = self.save_dir / 'results.csv'  # CSV logger
+        log_dir = self.save_dir / "summary"
         if 'tb' in self.include:
             prefix = colorstr('TensorBoard: ')
             self.console_logger.info(
-                f"{prefix}Start with 'tensorboard --logdir {self.save_dir.parent}', view at http://localhost:6006/")
-            self.tb = SummaryWriter(str(self.save_dir))
+                f"{prefix}Start with 'tensorboard --logdir {log_dir.parent.parent}', view at http://localhost:6006/")
+            self.tb = SummaryWriter(str(log_dir))
 
         if wandb and 'wandb' in self.include:
+            log_dir = self.save_dir / "wandb"
             self.wandb = wandb.init(project=web_project_name(str(opt.project)),
+                                    dir=log_dir,
                                     name=None if opt.name == "exp" else opt.name,
                                     config=opt)
         else:

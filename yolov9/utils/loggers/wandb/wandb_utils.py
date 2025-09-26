@@ -112,7 +112,7 @@ class WandbLogger():
     https://docs.wandb.com/guides/integrations/yolov5
     """
 
-    def __init__(self, opt, run_id=None, job_type='Training'):
+    def __init__(self, opt, run_id=None, job_type='Training', save_dir=None):
         """
         - Initialize WandbLogger instance
         - Upload dataset if opt.upload_dataset is True
@@ -122,6 +122,7 @@ class WandbLogger():
         opt (namespace) -- Commandline arguments for this run
         run_id (str) -- Run ID of W&B run to be resumed
         job_type (str) -- To set the job_type for this run
+        save_dir (str) -- Save directory location.
 
        """
         # Temporary-fix
@@ -151,6 +152,7 @@ class WandbLogger():
                 # Resume wandb-artifact:// runs here| workaround for not overwriting wandb.config
                 self.wandb_run = wandb.init(id=run_id,
                                             project=project,
+                                            dir=save_dir,
                                             entity=entity,
                                             resume='allow',
                                             allow_val_change=True)
@@ -159,6 +161,7 @@ class WandbLogger():
             self.wandb_run = wandb.init(config=opt,
                                         resume="allow",
                                         project='YOLOv9' if opt.project == 'runs/train' else Path(opt.project).stem,
+                                        dir=save_dir,
                                         entity=opt.entity,
                                         name=opt.name if opt.name != 'exp' else None,
                                         job_type=job_type,
