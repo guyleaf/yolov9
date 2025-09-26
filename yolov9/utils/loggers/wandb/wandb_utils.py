@@ -158,7 +158,7 @@ class WandbLogger():
         elif self.wandb:
             self.wandb_run = wandb.init(config=opt,
                                         resume="allow",
-                                        project='YOLOv5' if opt.project == 'runs/train' else Path(opt.project).stem,
+                                        project='YOLOv9' if opt.project == 'runs/train' else Path(opt.project).stem,
                                         entity=opt.entity,
                                         name=opt.name if opt.name != 'exp' else None,
                                         job_type=job_type,
@@ -204,7 +204,7 @@ class WandbLogger():
         """
         assert wandb, 'Install wandb to upload dataset'
         config_path = self.log_dataset_artifact(opt.data, opt.single_cls,
-                                                'YOLOv5' if opt.project == 'runs/train' else Path(opt.project).stem)
+                                                'YOLOv9' if opt.project == 'runs/train' else Path(opt.project).stem)
         with open(config_path, errors='ignore') as f:
             wandb_data_dict = yaml.safe_load(f)
         return wandb_data_dict
