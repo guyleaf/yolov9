@@ -12,7 +12,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 COMET_PREFIX = "comet://"
-COMET_MODEL_NAME = os.getenv("COMET_MODEL_NAME", "yolov5")
+COMET_MODEL_NAME = os.getenv("COMET_MODEL_NAME", "yolov9")
 COMET_DEFAULT_CHECKPOINT_FILENAME = os.getenv("COMET_DEFAULT_CHECKPOINT_FILENAME", "last.pt")
 
 
@@ -100,7 +100,7 @@ def check_comet_weights(opt):
 
     Args:
         opt (argparse.Namespace): Command Line arguments passed
-            to YOLOv5 training script
+            to YOLOv9 training script
 
     Returns:
         None/bool: Return True if weights are successfully downloaded
@@ -127,7 +127,7 @@ def check_comet_resume(opt):
 
     Args:
         opt (argparse.Namespace): Command Line arguments passed
-            to YOLOv5 training script
+            to YOLOv9 training script
 
     Returns:
         None/bool: Return True if the run is restored successfully

@@ -18,7 +18,7 @@ try:
 
     # Project Configuration
     config = comet_ml.config.get_config()
-    COMET_PROJECT_NAME = config.get_string(os.getenv("COMET_PROJECT_NAME"), "comet.project_name", default="yolov5")
+    COMET_PROJECT_NAME = config.get_string(os.getenv("COMET_PROJECT_NAME"), "comet.project_name", default="yolov9")
 except (ModuleNotFoundError, ImportError):
     comet_ml = None
     COMET_PROJECT_NAME = None
@@ -28,7 +28,7 @@ COMET_PREFIX = "comet://"
 COMET_MODE = os.getenv("COMET_MODE", "online")
 
 # Model Saving Settings
-COMET_MODEL_NAME = os.getenv("COMET_MODEL_NAME", "yolov5")
+COMET_MODEL_NAME = os.getenv("COMET_MODEL_NAME", "yolov9")
 
 # Dataset Artifact Settings
 COMET_UPLOAD_DATASET = os.getenv("COMET_UPLOAD_DATASET", "false").lower() == "true"
@@ -93,7 +93,7 @@ class CometLogger:
         self.max_images = COMET_MAX_IMAGE_UPLOADS
 
         if run_id is None:
-            self.experiment.log_other("Created from", "YOLOv5")
+            self.experiment.log_other("Created from", "YOLOv9")
             if not isinstance(self.experiment, comet_ml.OfflineExperiment):
                 workspace, project_name, experiment_id = self.experiment.url.split("/")[-3:]
                 self.experiment.log_other(
@@ -313,7 +313,7 @@ class CometLogger:
         return artifact
 
     def upload_dataset_artifact(self):
-        dataset_name = self.data_dict.get("dataset_name", "yolov5-dataset")
+        dataset_name = self.data_dict.get("dataset_name", "yolov9-dataset")
         path = Path(self.data_dict["path"])
         if not path.is_absolute():
             path = (DATASETS_DIR / path).resolve()

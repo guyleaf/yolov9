@@ -20,7 +20,7 @@ from train import train  # noqa: E402
 
 # Project Configuration
 config = comet_ml.config.get_config()
-COMET_PROJECT_NAME = config.get_string(os.getenv("COMET_PROJECT_NAME"), "comet.project_name", default="yolov5")
+COMET_PROJECT_NAME = config.get_string(os.getenv("COMET_PROJECT_NAME"), "comet.project_name", default="yolov9")
 
 logger = logging.getLogger(__name__)
 

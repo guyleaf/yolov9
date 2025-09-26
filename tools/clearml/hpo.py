@@ -1,11 +1,12 @@
 from clearml import Task
+
 # Connecting ClearML with the current process,
 # from here on everything is logged automatically
 from clearml.automation import HyperParameterOptimizer, UniformParameterRange
 from clearml.automation.optuna import OptimizerOptuna
 
 task = Task.init(project_name='Hyper-Parameter Optimization',
-                 task_name='YOLOv5',
+                 task_name='YOLOv9',
                  task_type=Task.TaskTypes.optimizer,
                  reuse_last_task_id=False)
 
