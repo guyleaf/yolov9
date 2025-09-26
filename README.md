@@ -32,6 +32,9 @@ Implementation of paper - [YOLOv9: Learning What You Want to Learn Using Program
 - [x] Support customizing the behavior of loading checkpoint (PR [#4](https://github.com/guyleaf/yolov9/pull/4))
 - [x] Support None and int type in freeze argument (PR [#6](https://github.com/guyleaf/yolov9/pull/6))
 
+### Fix
+- [x] Change some default names from YOLOv5 to YOLOv9 for logging and exp tracking (PR [#7](https://github.com/guyleaf/yolov9/pull/7))
+
 ### Refactor (break compatibility)
 ### Feature (break compatibility)
 
