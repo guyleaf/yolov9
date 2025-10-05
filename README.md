@@ -35,6 +35,7 @@ Implementation of paper - [YOLOv9: Learning What You Want to Learn Using Program
 
 ### Fix
 - [x] Change some default names from YOLOv5 to YOLOv9 for logging and exp tracking (PR [#7](https://github.com/guyleaf/yolov9/pull/7))
+- [x] Fix the typo of `min_items` argument if run val scripts directly (PR [#10](https://github.com/guyleaf/yolov9/pull/10))
 
 ### Refactor (break compatibility)
 ### Feature (break compatibility)
