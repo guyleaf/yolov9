@@ -107,7 +107,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     plots = not evolve and not opt.noplots  # create plots
     overlap = not opt.no_overlap
     cuda = device.type != 'cpu'
-    init_seeds(opt.seed + 1 + RANK, deterministic=True)
+    init_seeds(opt.seed + 1 + RANK, deterministic=not opt.nodeterministic)
     with torch_distributed_zero_first(LOCAL_RANK):
         data_dict = data_dict or check_dataset(data)  # check if None
     train_path, val_path = data_dict['train'], data_dict['val']
@@ -505,6 +505,7 @@ def parse_opt(known=False):
     parser.add_argument('--noval', action='store_true', help='only validate final epoch')
     parser.add_argument('--noautoanchor', action='store_true', help='disable AutoAnchor')
     parser.add_argument('--noplots', action='store_true', help='save no plot files')
+    parser.add_argument('--nodeterministic', action='store_true', help='train in non-deterministic mode')
     parser.add_argument('--evolve', type=int, nargs='?', const=300, help='evolve hyperparameters for x generations')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='image --cache ram/disk')
@@ -555,7 +556,10 @@ def main(opt, callbacks=Callbacks()):
                 d = yaml.safe_load(f)
         else:
             d = torch.load(last, map_location='cpu')['opt']
-        opt = argparse.Namespace(**d)  # replace
+        # override approach for keeping backward compatibility
+        for k, v in d.items():
+            setattr(opt, k, v)
+        # opt = argparse.Namespace(**d)  # replace
         opt.cfg, opt.weights, opt.resume = '', str(last), True  # reinstate
         if is_url(opt_data):
             opt.data = check_file(opt_data)  # avoid HUB resume auth timeout
