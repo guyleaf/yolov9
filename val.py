@@ -182,7 +182,7 @@ def run(
     s = ('%22s' + '%11s' * 6) % ('Class', 'Images', 'Instances', 'P', 'R', 'mAP50', 'mAP50-95')
     tp, fp, p, r, f1, mp, mr, map50, ap50, map = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     dt = Profile(), Profile(), Profile()  # profiling times
-    loss = torch.zeros(3, device=device)
+    loss = None
     jdict, stats, ap, ap_class = [], [], [], []
     callbacks.run('on_val_start')
     pbar = tqdm(dataloader, desc=s, bar_format=TQDM_BAR_FORMAT)  # progress bar
@@ -207,7 +207,8 @@ def run(
         # Loss
         if compute_loss:
             assert train_out is not None, "The outputs are missing for loss calculation."
-            loss += compute_loss(train_out, targets)[1]  # box, obj, cls
+            _, loss_items = compute_loss(train_out, targets)
+            loss = (loss + loss_items) if loss is not None else loss_items
 
         # NMS
         targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
@@ -330,7 +331,8 @@ def run(
     maps = np.zeros(nc) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
-    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
+    loss = (loss.cpu() / len(dataloader)).tolist() if loss is not None else []
+    return (mp, mr, map50, map, *loss), maps, t
 
 
 def parse_opt():
